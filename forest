@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>A Small Forest For You</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #1b1c33 0%, #050510 60%, #020208 100%);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "PingFang SC", "Microsoft Yahei", sans-serif;
+      color: #f7f5ef;
+    }
+
+    .wrapper {
+      width: min(960px, 100vw);
+      padding: 12px;
+    }
+
+    .forest-card {
+      position: relative;
+      border-radius: 24px;
+      background: #050711;
+      box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.7),
+        0 0 0 1px rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+    }
+
+    .forest-scene {
+      position: relative;
+      padding-bottom: 52%;
+      /* 16:9 比例 */
+      overflow: hidden;
+    }
+
+    .layer {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* 天空与远景树 */
+    .sky {
+      background: radial-gradient(circle at 50% -10%, #3b406a 0%, #15162a 45%, #050510 100%);
+    }
+
+    .stars {
+      background-image:
+        radial-gradient(1px 1px at 10% 15%, rgba(255, 255, 255, 0.9) 0, transparent 55%),
+        radial-gradient(1.2px 1.2px at 40% 30%, rgba(255, 247, 220, 0.85) 0, transparent 55%),
+        radial-gradient(1px 1px at 70% 18%, rgba(221, 233, 255, 0.9) 0, transparent 55%),
+        radial-gradient(1.1px 1.1px at 18% 45%, rgba(255, 255, 255, 0.75) 0, transparent 55%),
+        radial-gradient(1px 1px at 80% 55%, rgba(234, 218, 255, 0.85) 0, transparent 55%);
+      opacity: 0.7;
+    }
+
+    .moon {
+      position: absolute;
+      top: 10%;
+      right: 12%;
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 25%, #fffdf2 0, #f4e4b8 35%, rgba(244, 228, 184, 0) 75%);
+      box-shadow: 0 0 20px rgba(244, 228, 184, 0.8);
+    }
+
+    .moon::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(circle at 40% 30%, rgba(16, 14, 30, 0.9) 0, rgba(16, 14, 30, 0) 60%);
+      transform: translateX(16%);
+    }
+
+    .distant-trees {
+      background:
+        linear-gradient(to bottom, transparent 0, transparent 32%, #050711 100%),
+        repeating-linear-gradient(
+          to right,
+          rgba(10, 12, 28, 0.9),
+          rgba(10, 12, 28, 0.9) 10px,
+          rgba(6, 7, 18, 0.95) 20px,
+          rgba(6, 7, 18, 0.95) 32px
+        );
+      mask-image: linear-gradient(to top, transparent 0, rgba(0, 0, 0, 0.3) 15%, rgba(0, 0, 0, 1) 55%);
+      opacity: 0.9;
+    }
+
+    /* 近景树干 */
+    .mid-trees {
+      background:
+        repeating-linear-gradient(
+          to right,
+          rgba(12, 14, 28, 0.9),
+          rgba(12, 14, 28, 0.9) 16px,
+          rgba(7, 9, 20, 1) 30px,
+          rgba(7, 9, 20, 1) 44px
+        );
+      clip-path: polygon(0 30%, 100% 20%, 100% 100%, 0 100%);
+      opacity: 0.9;
+      mix-blend-mode: normal;
+    }
+
+    /* 地面与植物 */
+    .ground {
+      position: absolute;
+      left: -5%;
+      right: -5%;
+      bottom: -4%;
+      height: 55%;
+      background:
+        radial-gradient(circle at 50% 0, #28303b 0, #151822 40%, #080911 85%, #04040a 100%);
+      border-radius: 50% 50% 0 0 / 40% 40% 0 0;
+    }
+
+    .plants-layer {
+      position: absolute;
+      inset: auto 4% 4% 4%;
+      height: 46%;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    .plant {
+      position: relative;
+      width: 60px;
+      height: 80px;
+      pointer-events: auto;
+    }
+
+    .stem {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 4px;
+      height: 70%;
+      border-radius: 999px;
+      transform: translateX(-50%);
+      background: linear-gradient(to top, #324536, #6f8c5f);
+    }
+
+    .leaf {
+      position: absolute;
+      width: 28px;
+      height: 16px;
+      border-radius: 999px;
+      background: linear-gradient(to right, #f3d49a, #e3b671);
+      transform-origin: left center;
+    }
+
+    .leaf:nth-child(2) {
+      bottom: 40%;
+      left: 34%;
+      transform: rotate(-20deg);
+    }
+
+    .leaf:nth-child(3) {
+      bottom: 55%;
+      left: 22%;
+      transform: rotate(-35deg);
+    }
+
+    .leaf:nth-child(4) {
+      bottom: 32%;
+      left: 46%;
+      transform: rotate(15deg);
+    }
+
+    .leaf:nth-child(5) {
+      bottom: 50%;
+      left: 52%;
+      transform: rotate(30deg);
+    }
+
+    .plant.plant-green .stem {
+      background: linear-gradient(to top, #283d33, #7da47a);
+    }
+
+    .plant.plant-green .leaf {
+      background: linear-gradient(to right, #c6e3a4, #82b779);
+    }
+
+    .plant.plant-red .stem {
+      background: linear-gradient(to top, #42242d, #8d3550);
+    }
+
+    .plant.plant-red .leaf {
+      background: linear-gradient(to right, #f6b1b1, #e36c78);
+    }
+
+    /* 蘑菇 */
+    .mushroom-group {
+      position: absolute;
+      left: 50%;
+      bottom: 7%;
+      transform: translateX(-50%);
+      width: 110px;
+      height: 80px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      pointer-events: auto;
+      cursor: pointer;
+    }
+
+    .mushroom {
+      position: relative;
+      width: 34px;
+      height: 60px;
+    }
+
+    .mushroom-stem {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 10px;
+      height: 60%;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      background: linear-gradient(to bottom, #f5ebdb, #d6c0a3);
+      box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
+    }
+
+    .mushroom-cap {
+      position: absolute;
+      bottom: 50%;
+      left: 50%;
+      width: 44px;
+      height: 26px;
+      transform: translateX(-50%);
+      border-radius: 999px 999px 70% 70%;
+      background: radial-gradient(circle at 30% 20%, #ffd8bf 0, #e07a57 40%, #a63e37 75%);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+    }
+
+    .mushroom-spot {
+      position: absolute;
+      width: 9px;
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(255, 238, 214, 0.85);
+      top: 30%;
+      left: 20%;
+    }
+
+    .mushroom-spot:nth-child(2) {
+      top: 45%;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .mushroom-spot:nth-child(3) {
+      top: 32%;
+      right: 16%;
+    }
+
+    /* 动物：兔子、狐狸、猫头鹰（简化插画形） */
+    .animal {
+      position: absolute;
+      cursor: pointer;
+      transform-origin: center bottom;
+    }
+
+    .rabbit {
+      left: 10%;
+      bottom: 10%;
+      width: 90px;
+      height: 80px;
+    }
+
+    .rabbit-body {
+      position: absolute;
+      bottom: 10px;
+      left: 18px;
+      width: 60px;
+      height: 38px;
+      border-radius: 60px 55px 46px 46px;
+      background: radial-gradient(circle at 30% 30%, #f6c9b6 0, #d57d6a 40%, #9b4a4a 85%);
+      box-shadow: 0 6px 10px rgba(0, 0, 0, 0.55);
+    }
+
+    .rabbit-head {
+      position: absolute;
+      bottom: 30px;
+      left: 8px;
+      width: 30px;
+      height: 26px;
+      border-radius: 60% 75% 60% 50%;
+      background: radial-gradient(circle at 20% 20%, #ffe0d0 0, #e09276 45%, #9b4a4a 80%);
+    }
+
+    .rabbit-ear {
+      position: absolute;
+      width: 10px;
+      height: 34px;
+      border-radius: 999px;
+      background: linear-gradient(to bottom, #f7ccb8, #b35b54);
+      transform-origin: bottom center;
+    }
+
+    .rabbit-ear.left {
+      bottom: 48px;
+      left: 10px;
+      transform: rotate(-6deg);
+    }
+
+    .rabbit-ear.right {
+      bottom: 48px;
+      left: 20px;
+      transform: rotate(8deg);
+    }
+
+    .rabbit-eye {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #2b1613;
+      right: 4px;
+      top: 9px;
+    }
+
+    .rabbit-tail {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      right: 6px;
+      bottom: 20px;
+      background: radial-gradient(circle at 30% 20%, #ffe4d5 0, #e1a392 60%);
+    }
+
+    .fox {
+      right: 9%;
+      bottom: 9%;
+      width: 120px;
+      height: 88px;
+    }
+
+    .fox-body {
+      position: absolute;
+      bottom: 14px;
+      left: 14px;
+      width: 80px;
+      height: 40px;
+      border-radius: 60px 70px 45px 50px;
+      background: radial-gradient(circle at 20% 20%, #ffd7b5 0, #e69254 35%, #b0592d 70%, #73311c 95%);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.6);
+    }
+
+    .fox-head {
+      position: absolute;
+      bottom: 30px;
+      left: 4px;
+      width: 34px;
+      height: 30px;
+      border-radius: 70% 50% 45% 40%;
+      background: radial-gradient(circle at 30% 18%, #ffe3c7 0, #f2b67d 40%, #b45e33 80%);
+    }
+
+    .fox-ear {
+      position: absolute;
+      width: 16px;
+      height: 18px;
+      border-radius: 999px 999px 0 0;
+      background: linear-gradient(to top, #803f29, #d98a54);
+      top: -6px;
+    }
+
+    .fox-ear.left {
+      left: 4px;
+      transform: rotate(-12deg);
+    }
+
+    .fox-ear.right {
+      right: 3px;
+      transform: rotate(10deg);
+    }
+
+    .fox-face {
+      position: absolute;
+      inset: 56% 0 0 0;
+      background: radial-gradient(circle at 50% 0, #fff7e9 0, #fbe3c1 52%, rgba(255, 247, 233, 0) 70%);
+      clip-path: polygon(0 0, 100% 0, 50% 100%);
+    }
+
+    .fox-eye {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #301416;
+      top: 8px;
+    }
+
+    .fox-eye.left { left: 9px; }
+    .fox-eye.right { right: 7px; }
+
+    .fox-tail {
+      position: absolute;
+      right: 4px;
+      bottom: 20px;
+      width: 52px;
+      height: 34px;
+      border-radius: 60px 100px 60px 50px;
+      background: radial-gradient(circle at 10% 50%, #ffe4bf 0, #f0b274 30%, #b35e31 70%, #6c321f 100%);
+      transform-origin: left center;
+    }
+
+    .fox-tail-tip {
+      position: absolute;
+      right: 0;
+      top: 4px;
+      width: 22px;
+      height: 20px;
+      border-radius: 60% 100% 60% 80%;
+      background: #fdf3de;
+    }
+
+    .owl {
+      left: 24%;
+      top: 28%;
+      width: 60px;
+      height: 80px;
+    }
+
+    .owl-body {
+      position: absolute;
+      bottom: 6px;
+      left: 16px;
+      width: 30px;
+      height: 42px;
+      border-radius: 50% 50% 45% 45%;
+      background: radial-gradient(circle at 30% 10%, #f7e4c7 0, #c68e5e 40%, #7c4f3b 80%);
+      box-shadow: 0 4px 9px rgba(0, 0, 0, 0.6);
+    }
+
+    .owl-head {
+      position: absolute;
+      bottom: 36px;
+      left: 10px;
+      width: 40px;
+      height: 30px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 0, #fff4de 0, #e1c49e 45%, #9b6545 90%);
+    }
+
+    .owl-face {
+      position: absolute;
+      inset: 40% 10% 5% 10%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 0, #fffaf0 0, #f1ddc6 55%, rgba(255, 250, 240, 0) 80%);
+    }
+
+    .owl-eye {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #3f2624;
+      top: 6px;
+    }
+
+    .owl-eye.left { left: 9px; }
+    .owl-eye.right { right: 9px; }
+
+    .owl-beak {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 0 0 60% 60%;
+      background: #d59b55;
+      left: 50%;
+      top: 13px;
+      transform: translateX(-50%);
+      clip-path: polygon(50% 100%, 0 0, 100% 0);
+    }
+
+    /* 萤火虫 */
+    .fireflies {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .firefly {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #fffbe3 0, #f3d27c 45%, rgba(243, 210, 124, 0) 80%);
+      box-shadow: 0 0 10px rgba(243, 210, 124, 0.9);
+      animation: drift 10s ease-in-out infinite;
+      opacity: 0.85;
+    }
+
+    .firefly:nth-child(1) { top: 40%; left: 14%; animation-duration: 12s; }
+    .firefly:nth-child(2) { top: 30%; left: 64%; animation-duration: 11s; }
+    .firefly:nth-child(3) { top: 52%; left: 78%; animation-duration: 13s; }
+    .firefly:nth-child(4) { top: 46%; left: 32%; animation-duration: 9s; }
+    .firefly:nth-child(5) { top: 38%; left: 50%; animation-duration: 10s; }
+
+    @keyframes drift {
+      0% { transform: translate3d(0, 0, 0); opacity: 0.4; }
+      20% { opacity: 0.9; }
+      50% { transform: translate3d(10px, -12px, 0); }
+      80% { opacity: 0.9; }
+      100% { transform: translate3d(-6px, 4px, 0); opacity: 0.4; }
+    }
+
+    /* 中间的“纸卡” */
+    .message-panel {
+      position: absolute;
+      left: 50%;
+      top: 52%;
+      transform: translate(-50%, -50%);
+      width: min(520px, 88%);
+      border-radius: 26px;
+      background: radial-gradient(circle at 10% 0, #fff9ef 0, #f6e7d2 45%, #e4cfb7 100%);
+      box-shadow:
+        0 10px 26px rgba(8, 6, 3, 0.75),
+        0 0 0 2px rgba(140, 99, 70, 0.55);
+      padding: 18px 20px 20px;
+    }
+
+    .message-border {
+      position: absolute;
+      inset: 8px;
+      border-radius: 22px;
+      border: 1px dashed rgba(158, 110, 77, 0.7);
+      pointer-events: none;
+    }
+
+    .message-title {
+      font-family: "Times New Roman", "Georgia", serif;
+      font-size: 16px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #7a4e3a;
+      margin-bottom: 6px;
+    }
+
+    .message-text {
+      font-family: "Georgia", "Times New Roman", serif;
+      font-size: 14px;
+      line-height: 1.7;
+      color: #5b4336;
+    }
+
+    .message-hint {
+      margin-top: 10px;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(110, 83, 60, 0.9);
+    }
+
+    .message-hint span {
+      opacity: 0.75;
+    }
+
+    /* 下方说明 */
+    .bottom-bar {
+      padding: 10px 18px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      color: rgba(230, 219, 205, 0.86);
+      background: linear-gradient(to right, #141523, #131522);
+    }
+
+    .bottom-left {
+      max-width: 72%;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(242, 207, 148, 0.7);
+      background: rgba(27, 21, 13, 0.8);
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #f4c26d;
+      box-shadow: 0 0 8px rgba(244, 194, 109, 0.9);
+    }
+
+    @media (max-width: 720px) {
+      .message-panel {
+        top: 54%;
+      }
+      .message-text {
+        font-size: 13px;
+      }
+      .bottom-left {
+        max-width: 64%;
+      }
+      .fox { right: 4%; }
+      .rabbit { left: 4%; }
+    }
+
+    /* 交互动画 */
+    .rabbit-hop {
+      animation: hop 0.7s ease-out;
+    }
+
+    @keyframes hop {
+      0% { transform: translateY(0); }
+      30% { transform: translateY(-18px); }
+      60% { transform: translateY(0); }
+      80% { transform: translateY(-6px); }
+      100% { transform: translateY(0); }
+    }
+
+    .fox-tail-wiggle .fox-tail {
+      animation: tail 0.9s ease-out;
+    }
+
+    @keyframes tail {
+      0% { transform: rotate(0deg); }
+      25% { transform: rotate(10deg); }
+      50% { transform: rotate(-8deg); }
+      75% { transform: rotate(6deg); }
+      100% { transform: rotate(0deg); }
+    }
+
+    .owl-bob {
+      animation: bob 0.9s ease-out;
+    }
+
+    @keyframes bob {
+      0% { transform: translateY(0); }
+      30% { transform: translateY(-6px); }
+      60% { transform: translateY(0); }
+      85% { transform: translateY(-3px); }
+      100% { transform: translateY(0); }
+    }
+
+    .mushroom-glow .mushroom-cap {
+      animation: glow 0.7s ease-out;
+    }
+
+    @keyframes glow {
+      0% { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4); }
+      40% { box-shadow: 0 0 18px rgba(255, 219, 180, 0.95); }
+      100% { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="forest-card">
+      <div class="forest-scene">
+        <div class="layer sky"></div>
+        <div class="layer stars"></div>
+        <div class="moon"></div>
+        <div class="layer distant-trees"></div>
+        <div class="layer mid-trees"></div>
+        <div class="ground"></div>
+
+        <!-- 植物 -->
+        <div class="plants-layer">
+          <div class="plant plant-gold">
+            <div class="stem"></div>
+            <div class="leaf"></div>
+            <div class="leaf"></div>
+            <div class="leaf"></div>
+            <div class="leaf"></div>
+          </div>
+          <div class="plant plant-green">
+            <div class="stem"></div>
+            <div class="leaf"></div>
+            <div class="leaf"></div>
+            <div class="leaf"></div>
+            <div class="leaf"></div>
+          </div>
+          <div class="plant plant-red">
+            <div class="stem"></div>
+            <div class="leaf"></div>
+            <div class="leaf"></div>
+            <div class="leaf"></div>
+            <div class="leaf"></div>
+          </div>
+          <div class="plant plant-green">
+            <div class="stem"></div>
+            <div class="leaf"></div>
+            <div class="leaf"></div>
+            <div class="leaf"></div>
+            <div class="leaf"></div>
+          </div>
+        </div>
+
+        <!-- 蘑菇（可点） -->
+        <div class="mushroom-group" data-role="mushrooms">
+          <div class="mushroom">
+            <div class="mushroom-stem"></div>
+            <div class="mushroom-cap">
+              <div class="mushroom-spot"></div>
+              <div class="mushroom-spot"></div>
+              <div class="mushroom-spot"></div>
+            </div>
+          </div>
+          <div class="mushroom">
+            <div class="mushroom-stem"></div>
+            <div class="mushroom-cap">
+              <div class="mushroom-spot"></div>
+              <div class="mushroom-spot"></div>
+              <div class="mushroom-spot"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 动物 -->
+        <div class="animal rabbit" data-role="rabbit">
+          <div class="rabbit-body"></div>
+          <div class="rabbit-head">
+            <div class="rabbit-eye"></div>
+          </div>
+          <div class="rabbit-ear left"></div>
+          <div class="rabbit-ear right"></div>
+          <div class="rabbit-tail"></div>
+        </div>
+
+        <div class="animal fox" data-role="fox">
+          <div class="fox-body"></div>
+          <div class="fox-head">
+            <div class="fox-ear left"></div>
+            <div class="fox-ear right"></div>
+            <div class="fox-face">
+              <div class="fox-eye left"></div>
+              <div class="fox-eye right"></div>
+            </div>
+          </div>
+          <div class="fox-tail">
+            <div class="fox-tail-tip"></div>
+          </div>
+        </div>
+
+        <div class="animal owl" data-role="owl">
+          <div class="owl-body"></div>
+          <div class="owl-head">
+            <div class="owl-face">
+              <div class="owl-eye left"></div>
+              <div class="owl-eye right"></div>
+              <div class="owl-beak"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 萤火虫 -->
+        <div class="fireflies">
+          <div class="firefly"></div>
+          <div class="firefly"></div>
+          <div class="firefly"></div>
+          <div class="firefly"></div>
+          <div class="firefly"></div>
+        </div>
+
+        <!-- 中间的纸卡 -->
+        <div class="message-panel">
+          <div class="message-border"></div>
+          <div class="message-title">A Quiet Wish</div>
+          <div class="message-text" id="messageText">
+            Tonight the forest is calm enough to hold a small wish for you.
+            Nothing big, nothing loud – just a gentle hope that your next days
+            feel a little warmer than the last.
+          </div>
+          <div class="message-hint">
+            <span>Tap the rabbit, the fox, the owl, or the mushrooms to wake another line.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-bar">
+        <div class="bottom-left">
+          A small corner of autumn-to-winter woods – for pauses, late replies,
+          and quiet birthdays that arrive a little after midnight.
+        </div>
+        <div class="bottom-right">
+          <div class="badge">
+            <div class="badge-dot"></div>
+            <span>FOREST NIGHT · INTERACTIVE CARD</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const messageText = document.getElementById("messageText");
+
+    const lines = {
+      rabbit: [
+        "May your worries grow smaller tonight, like footsteps fading softly into moss.",
+        "May you find one gentle thing that makes today feel worth keeping in your memory.",
+        "May the parts of you that feel timid still find a way to move forward, one quiet hop at a time."
+      ],
+      fox: [
+        "May you always keep a little clever warmth around you, even on colder days.",
+        "May unexpected paths open up for you, the way fox trails appear between trees.",
+        "May you feel allowed to change direction, without needing to explain why."
+      ],
+      owl: [
+        "May you remember that moving slowly can also be a kind of wisdom.",
+        "May the questions you carry tonight grow lighter, not heavier.",
+        "May you feel seen in a soft way, the way an owl sees without startling its guests."
+      ],
+      mushrooms: [
+        "May small, almost invisible things quietly bring you strength.",
+        "May you grow in directions nobody else has to understand, as long as they feel right to you.",
+        "May something you thought was over quietly begin again, in a gentler form."
+      ]
+    };
+
+    function pickLine(key) {
+      const group = lines[key];
+      if (!group || group.length === 0) return "";
+      const index = Math.floor(Math.random() * group.length);
+      return group[index];
+    }
+
+    function setMessage(key) {
+      const line = pickLine(key);
+      if (!line) return;
+      messageText.textContent = line;
+    }
+
+    function addOnceAnimation(element, className) {
+      element.classList.remove(className);
+      void element.offsetWidth;
+      element.classList.add(className);
+      const handle = () => {
+        element.classList.remove(className);
+        element.removeEventListener("animationend", handle);
+      };
+      element.addEventListener("animationend", handle);
+    }
+
+    const rabbit = document.querySelector("[data-role='rabbit']");
+    const fox = document.querySelector("[data-role='fox']");
+    const owl = document.querySelector("[data-role='owl']");
+    const mushrooms = document.querySelector("[data-role='mushrooms']");
+
+    if (rabbit) {
+      rabbit.addEventListener("click", () => {
+        setMessage("rabbit");
+        addOnceAnimation(rabbit, "rabbit-hop");
+      });
+    }
+
+    if (fox) {
+      fox.addEventListener("click", () => {
+        setMessage("fox");
+        addOnceAnimation(fox, "fox-tail-wiggle");
+      });
+    }
+
+    if (owl) {
+      owl.addEventListener("click", () => {
+        setMessage("owl");
+        addOnceAnimation(owl, "owl-bob");
+      });
+    }
+
+    if (mushrooms) {
+      mushrooms.addEventListener("click", () => {
+        setMessage("mushrooms");
+        mushrooms.classList.remove("mushroom-glow");
+        void mushrooms.offsetWidth;
+        mushrooms.classList.add("mushroom-glow");
+      });
+    }
+  </script>
+</body>
+</html>
